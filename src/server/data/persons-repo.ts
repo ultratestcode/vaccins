@@ -5,7 +5,9 @@
 import { randomUUID } from "node:crypto";
 import type { Client, InValue } from "@libsql/client";
 import type { Person } from "@/server/domain/persons";
+import type { RegleVaccinale } from "@/server/domain/schedule";
 import type { VaccinsRepository } from "@/server/services/persons";
+import { CALENDRIER_FRANCE } from "@/server/data/calendrier";
 
 const SELECT_PERSON = `
   SELECT id, name, birth_date, created_at, updated_at
@@ -63,5 +65,11 @@ export class LibsqlPersonsRepository implements VaccinsRepository {
     });
     const row = result.rows[0];
     return row ? toPerson(row as Record<string, InValue>) : null;
+  }
+
+  // Le calendrier est une donnée versionnée, pas une table : le dépôt la
+  // sert par le port pour que le domaine la reçoive en paramètre.
+  async scheduleRules(): Promise<RegleVaccinale[]> {
+    return CALENDRIER_FRANCE;
   }
 }
