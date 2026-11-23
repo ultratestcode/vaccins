@@ -35,6 +35,12 @@ class FakeRepo implements VaccinsRepository {
   async scheduleRules(): Promise<RegleVaccinale[]> {
     return [];
   }
+  async markDose(): Promise<void> {
+    /* non utilisé ici */
+  }
+  async doneDoses(): Promise<string[]> {
+    return [];
+  }
 }
 
 describe("addPerson", () => {

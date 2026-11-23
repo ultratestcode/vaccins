@@ -50,6 +50,13 @@ export async function initSchema(db: Client): Promise<void> {
       updated_at TEXT NOT NULL
     )
   `);
-  // Les tables des lots suivants (doses faites, etc.) s'ajouteront ici,
-  // de façon idempotent, sans jamais toucher aux données existantes.
+  // Lot 3 : doses déjà reçues, une ligne par (personne, règle).
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS done_doses (
+      person_id TEXT NOT NULL REFERENCES persons(id),
+      rule_id TEXT NOT NULL,
+      done_at TEXT NOT NULL,
+      PRIMARY KEY (person_id, rule_id)
+    )
+  `);
 }
