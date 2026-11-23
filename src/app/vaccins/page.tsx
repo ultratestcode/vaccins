@@ -1,6 +1,7 @@
 // Liste des personnes + formulaire d'ajout. Le formulaire poste vers
 // /api/persons : écriture réelle, puis redirect. Design system « Comptoir ».
 
+import Link from "next/link";
 import { connection } from "next/server";
 import { getVaccinsService } from "@/server/data/vaccins-service";
 import { Button } from "@/components/ui/button";
@@ -105,7 +106,12 @@ export default async function VaccinsPage({
             {people.map((person) => (
               <TableRow key={person.id}>
                 <TableCell className="py-3 font-medium">
-                  {person.name}
+                  <Link
+                    href={`/vaccins/${person.id}`}
+                    className="underline decoration-border underline-offset-4 hover:decoration-primary"
+                  >
+                    {person.name}
+                  </Link>
                 </TableCell>
                 <TableCell className="py-3 text-right text-muted-foreground tabular-nums">
                   {person.birthDate}

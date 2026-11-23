@@ -3,11 +3,19 @@
 
 import type { NewPersonInput, Person } from "@/server/domain/persons";
 import { normalizeNewPersonInput } from "@/server/domain/persons";
+import type {
+  DoseAttendue,
+  RegleVaccinale,
+} from "@/server/domain/schedule";
+import { computeDueDoses } from "@/server/domain/schedule";
 
 export interface VaccinsRepository {
   add(input: { name: string; birthDate: string }): Promise<Person>;
   list(): Promise<Person[]>;
   getById(id: string): Promise<Person | null>;
+  // Le calendrier est une donnée de la couche données, servie par le port :
+  // le domaine le reçoit en paramètre, il ne l'importe pas.
+  scheduleRules(): Promise<RegleVaccinale[]>;
 }
 
 export class VaccinsService {
@@ -22,5 +30,19 @@ export class VaccinsService {
 
   async listPersons(): Promise<Person[]> {
     return this.repo.list();
+  }
+
+  // Lot 2 : les doses dues d'une date de naissance, calculées par le domaine
+  // avec les règles servies par le dépôt. today arrive de l'appelant.
+  async scheduleFor(
+    birthDate: string,
+    today: string,
+  ): Promise<DoseAttendue[]> {
+    const rules = await this.repo.scheduleRules();
+    return computeDueDoses(birthDate, rules, today);
+  }
+
+  async getPerson(id: string): Promise<Person | null> {
+    return this.repo.getById(id);
   }
 }

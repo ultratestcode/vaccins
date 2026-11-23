@@ -4,6 +4,7 @@
 import { describe, expect, it } from "vitest";
 import { VaccinsService, type VaccinsRepository } from "@/server/services/persons";
 import type { Person } from "@/server/domain/persons";
+import type { RegleVaccinale } from "@/server/domain/schedule";
 
 const TODAY = "2026-11-23";
 
@@ -30,6 +31,9 @@ class FakeRepo implements VaccinsRepository {
 
   async getById(id: string): Promise<Person | null> {
     return this.people.find((p) => p.id === id) ?? null;
+  }
+  async scheduleRules(): Promise<RegleVaccinale[]> {
+    return [];
   }
 }
 
