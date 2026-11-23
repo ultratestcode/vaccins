@@ -3,8 +3,16 @@
 
 import Link from "next/link";
 import { connection } from "next/server";
+import { ChevronRight, Inbox, Plus, Users } from "lucide-react";
 import { getVaccinsService } from "@/server/data/vaccins-service";
+import { formatDateFr } from "@/lib/format";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -55,71 +63,112 @@ export default async function VaccinsPage({
 
   // L'horloge est une valeur instable sous Cache Components (garde
   // « blocking-prerender-current-time ») : connection() déclare qu'on est au
-  // moment de la requête ; ici elle ne sert qu'au message d'accueil.
+  // moment de la requête.
   await connection();
 
   return (
     <main className="mx-auto max-w-2xl p-8">
-      <h1 className="text-2xl font-semibold mb-6">Check vaccinal</h1>
+      <header className="mb-8 flex items-center gap-4">
+        <div className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+          <Users className="size-5" aria-hidden />
+        </div>
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Personnes suivies
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {people.length === 0
+              ? "Commencez par ajouter une personne."
+              : `${people.length} personne${people.length > 1 ? "s" : ""} · cliquez un nom pour le check vaccinal`}
+          </p>
+        </div>
+      </header>
 
       {error ? (
         <p
           role="alert"
-          className="mb-4 rounded border border-destructive/40 bg-destructive/10 p-3 text-destructive"
+          className="mb-4 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-destructive"
         >
           {error}
         </p>
       ) : null}
       {added ? (
-        <p className="mb-4 rounded border border-accent-foreground/25 bg-accent p-3 text-accent-foreground">
+        <p className="mb-4 rounded-xl border border-accent-foreground/25 bg-accent p-3 text-accent-foreground">
           Personne ajoutée.
         </p>
       ) : null}
 
-      <form action="/api/persons" method="post" className="mb-8 grid gap-4">
-        <Field id="person-name" name="name" label="Nom *" required />
-        <Field
-          id="person-birthdate"
-          name="birthDate"
-          label="Date de naissance *"
-          type="date"
-          required
-        />
-        <Button type="submit" className="justify-self-start">
-          Ajouter
-        </Button>
-      </form>
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle className="text-base">Ajouter une personne</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form
+            action="/api/persons"
+            method="post"
+            className="grid gap-4 sm:grid-cols-2"
+          >
+            <Field id="person-name" name="name" label="Nom *" required />
+            <Field
+              id="person-birthdate"
+              name="birthDate"
+              label="Date de naissance *"
+              type="date"
+              required
+            />
+            <Button type="submit" className="justify-self-start">
+              <Plus data-icon="inline-start" />
+              Ajouter
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
       {people.length === 0 ? (
-        <p className="text-muted-foreground">
-          Aucune personne pour le moment. Ajoutez-en une ci-dessus.
-        </p>
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed py-14 text-center">
+          <Inbox className="size-8 text-muted-foreground/60" aria-hidden />
+          <p className="text-muted-foreground">
+            Aucune personne pour le moment.
+          </p>
+        </div>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-secondary/60 hover:bg-secondary/60">
-              <TableHead>Nom</TableHead>
-              <TableHead className="text-right">Date de naissance</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {people.map((person) => (
-              <TableRow key={person.id}>
-                <TableCell className="py-3 font-medium">
-                  <Link
-                    href={`/vaccins/${person.id}`}
-                    className="underline decoration-border underline-offset-4 hover:decoration-primary"
-                  >
-                    {person.name}
-                  </Link>
-                </TableCell>
-                <TableCell className="py-3 text-right text-muted-foreground tabular-nums">
-                  {person.birthDate}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <Card className="py-0">
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-secondary/60 hover:bg-secondary/60">
+                  <TableHead>Nom</TableHead>
+                  <TableHead className="text-right">
+                    Date de naissance
+                  </TableHead>
+                  <TableHead className="w-10" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {people.map((person) => (
+                  <TableRow key={person.id}>
+                    <TableCell className="py-3.5 font-medium">
+                      <Link
+                        href={`/vaccins/${person.id}`}
+                        className="underline decoration-border underline-offset-4 hover:decoration-primary"
+                      >
+                        {person.name}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="py-3.5 text-right text-muted-foreground tabular-nums">
+                      {formatDateFr(person.birthDate)}
+                    </TableCell>
+                    <TableCell className="py-3.5 text-right">
+                      <Link href={`/vaccins/${person.id}`} aria-label={`Voir ${person.name}`}>
+                        <ChevronRight className="ml-auto size-4 text-muted-foreground" />
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       )}
     </main>
   );
