@@ -49,32 +49,55 @@ function KindBadge({ kind }: { kind: "obligatoire" | "recommande" }) {
   );
 }
 
+// Le statut passe sous le libellé en dessous de sm : la colonne date +
+// badge + bouton ne rentre pas en dessous de ~400 px et ferait déborder
+// le tableau (issue #6).
+function DoseStatut({ dose }: { dose: DoseAttendue }) {
+  return dose.enRetard ? (
+    <Badge variant="destructive">En retard</Badge>
+  ) : (
+    <KindBadge kind={dose.kind} />
+  );
+}
+
 // Une ligne de dose due : ses infos + le bouton qui la marque reçue.
 function DueRow({ dose, personId }: { dose: DoseAttendue; personId: string }) {
   return (
     <TableRow>
-      <TableCell className="py-3.5 font-medium">{dose.label}</TableCell>
+      {/* Libellé autorisé à wrapper : sans ça, whitespace-nowrap du
+          composant impose une largeur minimale et fait apparaître un scroll
+          horizontal dans la Card (issue #6). */}
+      <TableCell className="py-3.5 font-medium whitespace-normal">
+        {dose.label}
+        <span className="mt-1.5 block sm:hidden">
+          <DoseStatut dose={dose} />
+        </span>
+      </TableCell>
       <TableCell className="py-3.5 text-muted-foreground">
         <span className="inline-flex items-center gap-1.5 tabular-nums">
-          <CalendarDays className="size-3.5" aria-hidden />
+          <CalendarDays className="hidden size-3.5 sm:inline" aria-hidden />
           {formatDateFr(dose.dueDate)}
         </span>
       </TableCell>
-      <TableCell className="py-3.5 text-right">
-        {dose.enRetard ? (
-          <Badge variant="destructive">En retard</Badge>
-        ) : (
-          <KindBadge kind={dose.kind} />
-        )}
+      <TableCell className="hidden py-3.5 text-right sm:table-cell">
+        <DoseStatut dose={dose} />
       </TableCell>
       <TableCell className="py-3.5 text-right">
         <form action="/api/persons/doses" method="post">
           <input type="hidden" name="personId" value={personId} />
           <input type="hidden" name="ruleId" value={dose.ruleId} />
           <input type="hidden" name="done" value="1" />
-          <Button type="submit" variant="outline" size="sm">
-            <Check data-icon="inline-start" />
-            Fait
+          <Button
+            type="submit"
+            variant="outline"
+            size="sm"
+            aria-label={`Marquer fait : ${dose.label}`}
+          >
+            <Check className="sm:hidden" aria-hidden />
+            <span className="hidden items-center gap-1.5 sm:inline-flex">
+              <Check data-icon="inline-start" />
+              Fait
+            </span>
           </Button>
         </form>
       </TableCell>
@@ -197,7 +220,9 @@ export default async function PersonSchedulePage({
                 <TableRow className="bg-secondary/60 hover:bg-secondary/60">
                   <TableHead>Vaccin</TableHead>
                   <TableHead>Échéance</TableHead>
-                  <TableHead className="text-right">Statut</TableHead>
+                  <TableHead className="hidden text-right sm:table-cell">
+                    Statut
+                  </TableHead>
                   <TableHead className="text-right">Fait</TableHead>
                 </TableRow>
               </TableHeader>
@@ -229,7 +254,7 @@ export default async function PersonSchedulePage({
               <TableBody>
                 {faites.map((dose) => (
                   <TableRow key={dose.ruleId}>
-                    <TableCell className="py-3.5 font-medium">
+                    <TableCell className="py-3.5 font-medium whitespace-normal">
                       {dose.label}
                     </TableCell>
                     <TableCell className="py-3.5 text-right">
