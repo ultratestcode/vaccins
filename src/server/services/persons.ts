@@ -16,7 +16,25 @@ export interface VaccinsRepository {
   // Le calendrier est une donnée de la couche données, servie par le port :
   // le domaine le reçoit en paramètre, il ne l'importe pas.
   scheduleRules(): Promise<RegleVaccinale[]>;
+  markDose(input: {
+    personId: string;
+    ruleId: string;
+    done: boolean;
+  }): Promise<void>;
+  doneDoses(personId: string): Promise<string[]>;
 }
+
+// Vue complète de l'écran détail : la personne, ce qui reste dû, ce qui est
+// déjà reçu (avec les libellés du calendrier).
+export type ScheduleVue = {
+  person: Person;
+  due: DoseAttendue[];
+  faites: Array<{
+    ruleId: string;
+    label: string;
+    kind: "obligatoire" | "recommande";
+  }>;
+};
 
 export class VaccinsService {
   constructor(private readonly repo: VaccinsRepository) {}
@@ -44,5 +62,36 @@ export class VaccinsService {
 
   async getPerson(id: string): Promise<Person | null> {
     return this.repo.getById(id);
+  }
+
+  // Lot 3 : la vue de l'écran détail. null si la personne n'existe pas.
+  async getSchedule(personId: string, today: string): Promise<ScheduleVue | null> {
+    const person = await this.repo.getById(personId);
+    if (!person) return null;
+    const [rules, doneIds] = await Promise.all([
+      this.repo.scheduleRules(),
+      this.repo.doneDoses(personId),
+    ]);
+    return {
+      person,
+      due: computeDueDoses(person.birthDate, rules, today, doneIds),
+      faites: rules
+        .filter((r) => doneIds.includes(r.id))
+        .map((r) => ({ ruleId: r.id, label: r.label, kind: r.kind })),
+    };
+  }
+
+  // Cocher/décocher une dose. La personne et la règle sont vérifiées AVANT
+  // écriture : un refus ne touche jamais la base.
+  async setDoseDone(
+    personId: string,
+    ruleId: string,
+    done: boolean,
+  ): Promise<void> {
+    const person = await this.repo.getById(personId);
+    if (!person) throw new Error("Personne introuvable.");
+    const rules = await this.repo.scheduleRules();
+    if (!rules.some((r) => r.id === ruleId)) throw new Error("Vaccin inconnu.");
+    await this.repo.markDose({ personId, ruleId, done });
   }
 }

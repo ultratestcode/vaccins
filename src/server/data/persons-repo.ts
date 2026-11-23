@@ -72,4 +72,32 @@ export class LibsqlPersonsRepository implements VaccinsRepository {
   async scheduleRules(): Promise<RegleVaccinale[]> {
     return CALENDRIER_FRANCE;
   }
+
+  async markDose(input: {
+    personId: string;
+    ruleId: string;
+    done: boolean;
+  }): Promise<void> {
+    if (input.done) {
+      await this.db.execute({
+        sql: `INSERT INTO done_doses (person_id, rule_id, done_at)
+              VALUES (?, ?, ?)
+              ON CONFLICT (person_id, rule_id) DO NOTHING`,
+        args: [input.personId, input.ruleId, new Date().toISOString()],
+      });
+    } else {
+      await this.db.execute({
+        sql: "DELETE FROM done_doses WHERE person_id = ? AND rule_id = ?",
+        args: [input.personId, input.ruleId],
+      });
+    }
+  }
+
+  async doneDoses(personId: string): Promise<string[]> {
+    const result = await this.db.execute({
+      sql: "SELECT rule_id FROM done_doses WHERE person_id = ? ORDER BY done_at ASC",
+      args: [personId],
+    });
+    return result.rows.map((row) => String(row.rule_id));
+  }
 }

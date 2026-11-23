@@ -68,11 +68,13 @@ export function computeDueDoses(
   birthDate: string,
   rules: RegleVaccinale[],
   today: string,
+  doneRuleIds: string[] = [],
 ): DoseAttendue[] {
   const horizon = addMois(today, HORIZON);
   const doses: DoseAttendue[] = [];
 
   for (const rule of rules) {
+    if (doneRuleIds.includes(rule.id)) continue; // déjà reçue (lot 3)
     const e = rule.echeance;
     let dueDate: string;
 

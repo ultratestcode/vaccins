@@ -108,6 +108,24 @@ describe("computeDueDoses", () => {
     expect(ids("1979-07-07")).not.toContain("ror-apres-1980");
   });
 
+  it("une dose cochée disparaît des dues", () => {
+    const due = computeDueDoses("1996-05-10", regles, TODAY, ["rappel-25"]);
+    expect(due.find((d) => d.ruleId === "rappel-25")).toBeUndefined();
+  });
+
+  it("décochée, la dose revient dans les dues", () => {
+    const avec = computeDueDoses("1996-05-10", regles, TODAY, ["rappel-25"]);
+    const sans = computeDueDoses("1996-05-10", regles, TODAY, []);
+    expect(avec.find((d) => d.ruleId === "rappel-25")).toBeUndefined();
+    expect(sans.find((d) => d.ruleId === "rappel-25")).toBeDefined();
+  });
+
+  it("une dose future cochée d'avance reste cachée aussi", () => {
+    // 44 ans : rappel de 45 ans imminent ; coché d'avance → masqué.
+    const due = computeDueDoses("1982-05-10", regles, TODAY, ["rappel-45"]);
+    expect(due.find((d) => d.ruleId === "rappel-45")).toBeUndefined();
+  });
+
   it("les doses sont triées par date croissante", () => {
     const due = computeDueDoses("1996-05-10", regles, TODAY);
     const dates = due.map((d) => d.dueDate);
