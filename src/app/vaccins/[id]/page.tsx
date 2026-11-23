@@ -6,6 +6,11 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { getVaccinsService } from "@/server/data/vaccins-service";
 import type { DoseAttendue } from "@/server/domain/schedule";
+import {
+  filterByKind,
+  normalizeScheduleType,
+  type ScheduleType,
+} from "@/server/domain/schedule-filter";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -83,8 +88,19 @@ export default async function PersonSchedulePage({
 
   const vue = await service.getSchedule(id, today);
   if (!vue) notFound();
-  const { person, due, faites } = vue;
-  const retards = due.filter((d) => d.enRetard).length;
+  const { person, due: toutesDues, faites: toutesFaites } = vue;
+
+  // Lot 4 : le filtre vient de l'URL (?type=) et s'applique aux deux
+  // tableaux ; une valeur inconnue est ignorée (le domaine le garantit).
+  const type = normalizeScheduleType(
+    typeof sp.type === "string" ? sp.type : null,
+  );
+  const due = filterByKind(toutesDues, type);
+  const faites = filterByKind(toutesFaites, type);
+  const retards = toutesDues.filter((d) => d.enRetard).length;
+
+  const filterHref = (t: ScheduleType | null) =>
+    `/vaccins/${person.id}${t ? `?type=${t}` : ""}`;
 
   return (
     <main className="mx-auto max-w-2xl p-8">
@@ -99,6 +115,26 @@ export default async function PersonSchedulePage({
           Dose mise à jour.
         </p>
       ) : null}
+
+      <div className="mb-6 flex flex-wrap items-center gap-2">
+        <Button asChild variant={type === null ? "default" : "outline"} size="sm">
+          <Link href={filterHref(null)}>Tous</Link>
+        </Button>
+        <Button
+          asChild
+          variant={type === "obligatoire" ? "default" : "outline"}
+          size="sm"
+        >
+          <Link href={filterHref("obligatoire")}>Obligatoires</Link>
+        </Button>
+        <Button
+          asChild
+          variant={type === "recommande" ? "default" : "outline"}
+          size="sm"
+        >
+          <Link href={filterHref("recommande")}>Recommandés</Link>
+        </Button>
+      </div>
 
       <h2 className="mb-3 text-lg font-semibold">
         Doses dues {due.length > 0 ? `(${due.length})` : ""}
